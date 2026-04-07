@@ -76,8 +76,8 @@ parse_args() {
                 TAILSCALE_AUTH_KEY="$2"
                 shift 2
                 ;;
-            --tailscale-fqdn)
-                TAILSCALE_FQDN="$2"
+            --tailscale-subdomain)
+                TAILSCALE_SUBDOMAIN="$2"
                 shift 2
                 ;;
             --cloudflare-token)
@@ -252,10 +252,10 @@ interactive_prompt() {
             prompt_input "Paste your Tailscale Auth Key: " TAILSCALE_AUTH_KEY ""
         fi
 
-        if [[ -z "${TAILSCALE_FQDN:-}" ]]; then
+        if [[ -z "${TAILSCALE_SUBDOMAIN:-}" ]]; then
             echo ""
-            echo "Custom hostname (e.g., nemoclaw.example.com) or press Enter for default:"
-            prompt_input "[auto-generated tailxxxx.ts.net]: " TAILSCALE_FQDN ""
+            echo "Custom subdomain for your Tailscale domain (e.g., nemoclaw -> nemoclaw.tailxxxx.ts.net):"
+            prompt_input "[auto-generated]: " TAILSCALE_SUBDOMAIN ""
         fi
 
     # =================================================================
@@ -635,12 +635,16 @@ setup_tailscale() {
     if ! command -v tailscale &> /dev/null; then
         log "Installing Tailscale..."
         if command -v apt-get &> /dev/null; then
-            curl -fsSL https://pkgs.tailscale.com/stable/debian.bookworm.noarmor.gpg \
-                | tee /usr/share/keyrings/tailscale-archive-keyring.gpg > /dev/null
-            echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main" \
-                | tee /etc/apt/sources.list.d/tailscale.list > /dev/null
-            apt-get update -qq
-            apt-get install -y -qq tailscale > /dev/null 2>&1
+            # Use official Tailscale install script
+            curl -fsSL https://tailscale.com/install.sh | sh || {
+                # Fallback: manual installation
+                curl -fsSL https://pkgs.tailscale.com/stable/debian.bookworm.noarmor.gpg \
+                    -o /usr/share/keyrings/tailscale-archive-keyring.gpg 2>/dev/null || true
+                echo "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main" \
+                    > /etc/apt/sources.list.d/tailscale.list
+                apt-get update -qq 2>/dev/null || true
+                apt-get install -y -qq tailscale 2>/dev/null || true
+            }
         elif command -v yum &> /dev/null; then
             yum install -y -q tailscale 2>/dev/null || \
             (curl -fsSL https://pkgs.tailscale.com/stable/centos8/x86_64/repo.rpm -o /tmp/repo.rpm && \
@@ -674,18 +678,17 @@ setup_tailscale() {
             # Configure Funnel for automatic HTTPS certificates
             log "Configuring Tailscale Funnel for automatic HTTPS..."
 
-            if [[ -n "$TAILSCALE_FQDN" ]]; then
-                tailscale serve --set-hostname="$TAILSCALE_FQDN" 2>/dev/null || true
-                tailscale funnel --set-hostname="$TAILSCALE_FQDN" "$SSL_PORT" 2>/dev/null || \
-                tailscale funnel "$SSL_PORT" 2>/dev/null || true
-            else
-                tailscale funnel "$SSL_PORT" 2>/dev/null || \
-                tailscale serve --bg 2>/dev/null || true
-            fi
+            tailscale funnel "$SSL_PORT" 2>/dev/null || \
+            tailscale serve --bg 2>/dev/null || true
 
             # Get the Funnel hostname
             TAILSCALE_HOSTNAME=$(tailscale status --self --json 2>/dev/null | \
                 grep -oP '"DNSName":"[^"]+"' | head -1 | cut -d'"' -f4 | sed 's/\.$//' || true)
+
+            # Prepend subdomain if user specified one
+            if [[ -n "${TAILSCALE_SUBDOMAIN:-}" && -n "$TAILSCALE_HOSTNAME" ]]; then
+                TAILSCALE_HOSTNAME="${TAILSCALE_SUBDOMAIN}.${TAILSCALE_HOSTNAME}"
+            fi
 
             # Enable on boot
             systemctl enable tailscaled 2>/dev/null || true
@@ -721,11 +724,11 @@ setup_cloudflare_dns() {
     fi
 
     # Create DNS record pointing to server IP
-    local subdomain="${TAILSCALE_FQDN%%.*}"
+    local dns_name="${TAILSCALE_SUBDOMAIN:-${DOMAIN:-localhost}}"
     local dns_response=$(curl -fsSL -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
         -H "Content-Type: application/json" \
-        -d "{\"type\":\"A\",\"name\":\"${TAILSCALE_FQDN:-$subdomain}\",\"content\":\"$SERVER_IP\",\"ttl\":3600,\"proxied\":true}" \
+        -d "{\"type\":\"A\",\"name\":\"$dns_name\",\"content\":\"$SERVER_IP\",\"ttl\":3600,\"proxied\":true}" \
         2>/dev/null)
 
     if echo "$dns_response" | grep -q '"id"'; then
@@ -957,10 +960,11 @@ create_directories() {
 # Generate SSL cert
 generate_ssl_cert() {
     log_step "Generating SSL certificate..."
+    local cert_cn="${TAILSCALE_HOSTNAME:-localhost}"
     openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
         -keyout "$INSTALL_DIR/ssl/privkey.pem" \
         -out "$INSTALL_DIR/ssl/fullchain.pem" \
-        -subj "/C=US/ST=State/L=City/O=NemoClaw/CN=${TAILSCALE_FQDN:-localhost}" 2>/dev/null
+        -subj "/C=US/ST=State/L=City/O=NemoClaw/CN=${cert_cn}" 2>/dev/null
     log_success "SSL certificate generated"
 }
 
