@@ -1,23 +1,25 @@
-# NemoClaw VPS - GPU-Accelerated AI Agent
+# NemoClaw VPS - GPU-Accelerated AI Agent Framework
 
-A GPU-accelerated AI agent system combining **OpenClaw** with **NVIDIA NemoClaw** enterprise security features. Deploy on any VPS with GPU support.
+A GPU-accelerated AI agent framework that connects to **any LLM provider** - local (Ollama, LM Studio) or cloud (OpenAI, Anthropic, Groq). Deploy on any VPS with optional GPU acceleration.
 
 ## Key Features
 
-- **GPU Acceleration** - NVIDIA CUDA, AMD ROCm, or Intel GPU support
-- **Sandboxed Execution** - NVIDIA OpenShell isolation
-- **Pre-trained Model** - Nemotron 3 Super 120B (4-bit quantized)
+- **Any LLM Provider** - OpenAI, Anthropic, Ollama, Groq, LM Studio, or custom
+- **GPU Acceleration** - NVIDIA CUDA, AMD ROCm, Intel GPU, or CPU-only
 - **One-Line Install** - Deploy on any server with a single curl command
+- **Sandboxed Execution** - Secure AI agent with tool isolation
 - **Flexible Access** - Tailscale VPN, Cloudflare Tunnel, or direct access
 
-## GPU Requirements
+## Supported LLM Providers
 
-| GPU | VRAM | Recommended |
-|-----|------|-------------|
-| NVIDIA (CUDA 11.8+) | 16GB+ | RTX 4090, A100, L40 |
-| AMD (ROCm 5.4+) | 16GB+ | RX 7900 XT/XTX |
-| Intel Arc/Xeon | 8GB+ | Arc A770, Xeon |
-| CPU-only | 32GB+ RAM | AVX2 support |
+| Provider | Type | GPU Support | API Key |
+|----------|------|-------------|---------|
+| **Ollama** | Local (free) | Yes | None |
+| **OpenAI** | Cloud | No | Required |
+| **Anthropic** | Cloud | No | Required |
+| **Groq** | Cloud (fast) | No | Optional |
+| **LM Studio** | Local | Yes | None |
+| **Custom** | Any OpenAI-compatible | Depends | Optional |
 
 ## Quick Start
 
@@ -27,63 +29,64 @@ A GPU-accelerated AI agent system combining **OpenClaw** with **NVIDIA NemoClaw*
 curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash
 ```
 
-You'll be prompted to select GPU mode and enter credentials.
+---
+
+## LLM Provider Setup
+
+### Ollama (Local, Free)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
+  --llm-provider ollama --llm-model llama3.2 --gpu-mode nvidia
+```
+
+Popular models:
+- `llama3.2` - General purpose, fast
+- `llama3.2:70b` - Most capable
+- `mistral` - Good balance
+- `codellama` - Optimized for code
+- `deepseek-coder` - Best for coding
+
+### OpenAI (GPT-4, GPT-4o)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
+  --llm-provider openai --llm-api-key sk-xxxx --llm-model gpt-4o
+```
+
+### Anthropic (Claude 3.5 Sonnet)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
+  --llm-provider anthropic --llm-api-key sk-ant-xxxx --llm-model claude-3-5-sonnet-latest
+```
+
+### Groq (Fast Cloud Inference)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
+  --llm-provider groq --llm-api-key gsk_xxxx --llm-model llama-3.1-70b-versatile
+```
+
+Free tier available with `llama-3.1-8b-instant`.
+
+### LM Studio (Local)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
+  --llm-provider lmstudio --llm-endpoint http://localhost:1234/v1 --llm-model llama-3.2-3b-instruct
+```
 
 ---
 
-## GPU Mode Selection
+## GPU Modes
 
-### Mode 1: NVIDIA GPU (Recommended)
-
-Best performance for AI workloads. Requires NVIDIA GPU with CUDA support.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
-  --gpu-mode nvidia \
-  --nvidia-api-key nv-xxxxx
-```
-
-### Mode 2: AMD GPU
-
-For AMD GPUs using ROCm. Requires ROCm 5.4+.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
-  --gpu-mode amd \
-  --nvidia-api-key nv-xxxxx
-```
-
-### Mode 3: Intel GPU
-
-For Intel Arc GPUs or Xeon processors with integrated GPU.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
-  --gpu-mode intel \
-  --nvidia-api-key nv-xxxxx
-```
-
-### Mode 4: CPU Only
-
-No GPU required. Slower but works on any system.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
-  --gpu-mode cpu \
-  --nvidia-api-key nv-xxxxx
-```
-
----
-
-## With Custom Domain
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw-installer.sh | bash -s -- \
-  --gpu-mode nvidia \
-  --nvidia-api-key nv-xxxxx \
-  --domain ai.example.com \
-  --cloudflare-token cf_token
-```
+| Mode | Performance | VRAM | Best For |
+|------|-------------|------|----------|
+| **NVIDIA** | Best | 8GB+ | Local models, fast inference |
+| **AMD** | Best | 8GB+ | RX 7900 XT/XTX |
+| **Intel** | Good | 4GB+ | Arc GPUs, Xeon |
+| **CPU** | Slow | 16GB+ RAM | Testing, budget |
 
 ---
 
@@ -91,9 +94,11 @@ curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw
 
 | Option | Description |
 |--------|-------------|
-| `--gpu-mode` | GPU mode: nvidia, amd, intel, cpu |
-| `--nvidia-api-key` | NVIDIA API key for model access |
-| `--cloudflare-token` | Cloudflare API token for DNS |
+| `--llm-provider` | Provider: ollama, openai, anthropic, groq, lmstudio, custom |
+| `--llm-api-key` | API key for the provider |
+| `--llm-model` | Model name (default varies by provider) |
+| `--llm-endpoint` | Custom endpoint URL for proxies |
+| `--gpu-mode` | nvidia, amd, intel, cpu (default: nvidia) |
 | `--domain` | Your domain name |
 | `--admin-user` | Admin username (default: admin) |
 | `--admin-pass` | Admin password (auto-generated if not set) |
@@ -104,27 +109,26 @@ curl -fsSL https://raw.githubusercontent.com/rgsaura/nemo-claw-vps/main/nemoclaw
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     NEMOCLAW VPS                              │
-│                                                              │
-│  ┌─────────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │   Nginx    │───►│  NemoClaw    │───►│  Nemotron    │  │
-│  │  TLS/HTTPS │    │  AI Agent    │    │  3 Super     │  │
-│  └─────────────┘    └──────────────┘    └───────────────┘  │
-│                           │                                    │
-│                    ┌──────▼──────┐                          │
-│                    │   NVIDIA    │                          │
-│                    │   OpenShell │                          │
-│                    │  Sandbox    │                          │
-│                    └─────────────┘                          │
+│                     NEMOCLAW VPS                                  │
+│                                                                │
+│  ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐  │
+│  │   Nginx    │───►│  NemoClaw   │───►│  LLM Provider   │  │
+│  │  TLS/HTTPS │    │  AI Agent   │    │  (Any of these) │  │
+│  └─────────────┘    └──────────────┘    └─────────────────┘  │
+│                           │                    │                 │
+│                    ┌──────▼──────┐     ┌─────▼─────┐        │
+│                    │   Sandbox   │     │  Ollama   │        │
+│                    │  Execution  │     │  (local)  │        │
+│                    └─────────────┘     └───────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Security:**
-- NVIDIA OpenShell sandboxed execution
-- Sandboxed AI execution with isolation
-- Rate limiting (60 req/min)
-- Container isolation (read-only, dropped capabilities)
-- TLS 1.3 with secure cipher suites
+**LLM Providers:**
+- OpenAI: GPT-4, GPT-4o, GPT-4o-mini
+- Anthropic: Claude 3.5 Sonnet, Claude 3 Opus
+- Groq: llama-3.1-70b, mixtral-8x7b
+- Ollama: llama3.2, mistral, codellama (local)
+- LM Studio: Any GGUF model (local)
 
 ---
 
@@ -140,18 +144,19 @@ docker-compose -f /opt/nemoclaw/docker-compose.yml down
 # Restart services
 docker-compose -f /opt/nemoclaw/docker-compose.yml restart
 
-# Access shell
-docker-compose -f /opt/nemoclaw/docker-compose.yml exec nemoclaw nemoclaw shell
+# Ollama models (if using Ollama)
+docker-compose -f /opt/nemoclaw/docker-compose.yml --profile ollama up -d
 ```
 
 ---
 
-## NVIDIA API Key
+## API Keys
 
-Get your free NVIDIA API key from:
-**https://build.nvidia.com/nvidia/discover**
-
-The Nemotron 3 Super 120B model requires API access for inference.
+Get your API keys from:
+- **OpenAI:** https://platform.openai.com/api-keys
+- **Anthropic:** https://console.anthropic.com/settings/keys
+- **Groq:** https://console.groq.com/keys
+- **Ollama:** Free, no API key needed
 
 ---
 
@@ -159,8 +164,8 @@ The Nemotron 3 Super 120B model requires API access for inference.
 
 - Ubuntu/Debian/CentOS/Rocky Linux or Alpine
 - Docker and Docker Compose
-- Compatible GPU (or CPU with 32GB+ RAM)
-- NVIDIA account (free at build.nvidia.com)
+- Compatible GPU for local models (optional)
+- API key for cloud providers (optional)
 
 ---
 
