@@ -781,7 +781,7 @@ setup_cloudflare_tunnel() {
             local creds_file="$DATA_DIR/tunnel-credentials.json"
 
             # Create DNS record for the tunnel
-            local full_hostname="${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}.${DOMAIN}"
+            local full_hostname="${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}.${DOMAIN:-example.com}"
             log "Creating DNS record for $full_hostname..."
 
             # Get or create CNAME for the tunnel
@@ -1710,7 +1710,7 @@ print_summary() {
             echo "No ports are exposed to the public internet."
             echo ""
             echo "Access URL:"
-            printf '  %shttps://%s.%s%s\n' "$CYAN" "${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}" "${DOMAIN}" "$NC"
+            printf '  %shttps://%s.%s%s\n' "$CYAN" "${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}" "${DOMAIN:-example.com}" "$NC"
             echo ""
             echo "How to access:"
             echo "  1. Open your browser"
@@ -1725,7 +1725,7 @@ print_summary() {
             echo "Traffic is protected but ports 80/443 must be accessible."
             echo ""
             echo "Access URL:"
-            printf '  %shttps://%s.%s%s\n' "$CYAN" "${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}" "${DOMAIN}" "$NC"
+            printf '  %shttps://%s.%s%s\n' "$CYAN" "${CLOUDFLARE_TUNNEL_SUBDOMAIN:-nemoclaw}" "${DOMAIN:-example.com}" "$NC"
             echo ""
             echo "How to access:"
             echo "  1. Ensure ports 80 and 443 are open"
